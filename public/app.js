@@ -105,3 +105,103 @@ const zones = {
 let coinEnCours = null;        // { zoneId, coinIndex }
 let sourisEnfoncee = false;
 
+// ─── Source : vidéo ou grille de test ────────────────────────────────────────
+
+/**
+ * Génère une texture de grille colorée pour tester l'alignement.
+ * La grille a deux moitiés distinctes (une pour chaque mur).
+ */
+function creerTextureGrille() {
+    const largeur = 1024;
+    const hauteur = 512;
+    const canvas2d = document.createElement('canvas');
+    canvas2d.width = largeur;
+    canvas2d.height = hauteur;
+    const ctx = canvas2d.getContext('2d');
+
+    // Fond noir
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, largeur, hauteur);
+
+    const tailleCase = 64;
+    const couleurs = ['#1a3a6b', '#2e6fb5']; // bleu foncé / moyen = moitié gauche
+    const couleursD = ['#6b1a1a', '#b52e2e']; // rouge foncé / moyen = moitié droite
+
+    // Damier pour chaque moitié
+    for (let y = 0; y < hauteur; y += tailleCase) {
+        for (let x = 0; x < largeur; x += tailleCase) {
+            const pair = (Math.floor(x / tailleCase) + Math.floor(y / tailleCase)) % 2 === 0;
+            if (x < largeur / 2) {
+                ctx.fillStyle = pair ? couleurs[0] : couleurs[1];
+            } else {
+                ctx.fillStyle = pair ? couleursD[0] : couleursD[1];
+            }
+            ctx.fillRect(x, y, tailleCase, tailleCase);
+        }
+    }
+
+    // Lignes de grille blanches
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= largeur; x += tailleCase) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, hauteur); ctx.stroke();
+    }
+    for (let y = 0; y <= hauteur; y += tailleCase) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(largeur, y); ctx.stroke();
+    }
+
+    // Ligne de séparation gauche/droite bien visible
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(largeur / 2, 0); ctx.lineTo(largeur / 2, hauteur); ctx.stroke();
+
+    // Labels
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 32px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('MUR GAUCHE', largeur / 4, hauteur / 2);
+    ctx.fillText('MUR DROITE', (3 * largeur) / 4, hauteur / 2);
+
+    // Numéros de grille pour vérifier la distorsion
+    ctx.font = '14px monospace';
+    ctx.fillStyle = 'rgba(255,255,255,0.7)';
+    for (let col = 0; col < largeur / tailleCase; col++) {
+        for (let lig = 0; lig < hauteur / tailleCase; lig++) {
+            ctx.fillText(`${col},${lig}`, col * tailleCase + tailleCase / 2, lig * tailleCase + tailleCase / 2 + 5);
+        }
+    }
+
+    const texture = new THREE.CanvasTexture(canvas2d);
+    return texture;
+}
+
+/**
+ * Charge une vidéo MP4 depuis le serveur.
+ * @param {string} url - chemin de la vidéo
+ * @returns {THREE.VideoTexture}
+ */
+function chargerVideo(url) {
+    const video = document.createElement('video');
+    video.src = url;
+    video.loop = true;
+    video.muted = true;  // autoplay nécessite muted dans Chrome
+    video.playsInline = true;
+    video.crossOrigin = 'anonymous';
+
+    // Lancement automatique dès que suffisamment chargé
+    video.addEventListener('canplay', () => {
+        video.play().catch(() => {
+            // Si le navigateur bloque l'autoplay, on attend un clic
+            document.addEventListener('click', () => video.play(), { once: true });
+        });
+    });
+
+    video.load();
+    videoElement = video;
+
+    const texture = new THREE.VideoTexture(video);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    return texture;
+}
+
