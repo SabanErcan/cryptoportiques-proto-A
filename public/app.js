@@ -463,3 +463,34 @@ async function chargerReglages() {
     }
 }
 
+// ─── Changement de source (vidéo ↔ grille) ───────────────────────────────────
+
+function changerSource() {
+    // On construit une nouvelle texture selon le mode actuel
+    let nouvTexture;
+    if (modeGrille) {
+        nouvTexture = creerTextureGrille();
+    } else if (videoElement) {
+        nouvTexture = new THREE.VideoTexture(videoElement);
+        nouvTexture.minFilter = THREE.LinearFilter;
+        nouvTexture.magFilter = THREE.LinearFilter;
+    } else {
+        nouvTexture = creerTextureGrille();
+    }
+
+    textureSource = nouvTexture;
+    zones.gauche.uniforms.uTexture.value = nouvTexture;
+    zones.droite.uniforms.uTexture.value = nouvTexture;
+}
+
+// ─── Redimensionnement ────────────────────────────────────────────────────────
+
+function redimensionner() {
+    const l = window.innerWidth;
+    const h = window.innerHeight;
+    rendu.setSize(l, h);
+    // Correction de l'aspect des poignées après redimensionnement
+    meshPoignees.forEach((mesh) => { mesh.scale.x = h / l; });
+}
+window.addEventListener('resize', redimensionner);
+
