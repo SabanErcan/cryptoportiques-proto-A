@@ -205,3 +205,83 @@ function chargerVideo(url) {
     return texture;
 }
 
+// ─── Zone de déformation ──────────────────────────────────────────────────────
+
+/**
+ * Crée une zone de déformation : un quad plein écran avec shader homographique.
+ * @param {string} id - 'gauche' ou 'droite'
+ * @param {Array} coinsInitiaux - 4 coins initiaux
+ * @returns {object} zone avec getter/setter coins et méthode mettreAJour
+ */
+function creerZone(id, coinsInitiaux) {
+    // Variable interne mutable : c'est la seule source de vérité pour les coins.
+    // Bug closure classique : si on écrivait juste "coins" comme paramètre et
+    // qu'on faisait zone.coins = nouveauTableau depuis l'extérieur, mettreAJour
+    // continuerait de lire l'ancien tableau mémorisé à la création de la closure.
+    // Avec le getter/setter ci-dessous, zone.coins = x met à jour coinsLocaux,
+    // et mettreAJour lit toujours la valeur actuelle de coinsLocaux.
+    let coinsLocaux = coinsInitiaux;
+
+    // Un quad plein écran (-1 à 1 en X et Y)
+    const geo = new THREE.BufferGeometry();
+    const vertices = new Float32Array([
+        -1, -1, 0,
+        1, -1, 0,
+        1, 1, 0,
+        -1, 1, 0,
+    ]);
+    const uvs = new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]);
+    const indices = new Uint16Array([0, 1, 2, 0, 2, 3]);
+    geo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
+    geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+    geo.setIndex(new THREE.BufferAttribute(indices, 1));
+
+    // Uniforms : variables passées au shader depuis JavaScript
+    const uniforms = {
+        uTexture: { value: textureSource },
+        uHomographie: { value: new THREE.Matrix3() },
+        uCoteSource: { value: id === 'gauche' ? 0.0 : 0.5 },
+        uAfficherCoins: { value: false },
+    };
+
+    const materiau = new THREE.RawShaderMaterial({
+        vertexShader: VERTEX_SHADER,
+        fragmentShader: FRAGMENT_SHADER,
+        uniforms,
+        side: THREE.FrontSide,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        depthTest: false,
+    });
+
+    const mesh = new THREE.Mesh(geo, materiau);
+    scene.add(mesh);
+
+    // Calcule et envoie la matrice homographique au shader.
+    // Lit toujours depuis coinsLocaux (jamais depuis un paramètre figé).
+    function mettreAJour() {
+        const H = Homographie.calculerHomographie(coinsLocaux);
+        const mat3 = new THREE.Matrix3();
+        mat3.set(
+            H[0], H[3], H[6],
+            H[1], H[4], H[7],
+            H[2], H[5], H[8]
+        );
+        mat3.invert();
+        // Copie dans la matrice existante plutôt que remplacer la référence,
+        // pour que Three.js détecte le changement via sa comparaison interne.
+        uniforms.uHomographie.value.copy(mat3);
+    }
+
+    mettreAJour();
+
+    // L'objet retourné expose coins via getter/setter.
+    // getter : retourne le tableau courant (utilisé par creerPoignees, mettreAJourPoignees, etc.)
+    // setter : remplace le tableau interne ET met à jour l'homographie immédiatement.
+    return {
+        mesh, materiau, uniforms, mettreAJour, id,
+        get coins() { return coinsLocaux; },
+        set coins(v) { coinsLocaux = v; },
+    };
+}
+
