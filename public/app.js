@@ -421,3 +421,45 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+// ─── Sauvegarde et chargement des réglages ────────────────────────────────────
+
+/** Envoie les positions des coins au serveur (POST /reglages). */
+function sauvegarderReglages() {
+    const donnees = {
+        gauche: zones.gauche.coins,
+        droite: zones.droite.coins,
+    };
+
+    fetch('/reglages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(donnees),
+    })
+        .then((r) => r.ok ? afficherMessage('Réglages sauvegardés ✓') : afficherMessage('Erreur de sauvegarde'))
+        .catch(() => afficherMessage('Serveur inaccessible'));
+}
+
+/** Affiche un message temporaire en bas de l'écran. */
+function afficherMessage(texte) {
+    const el = document.getElementById('message');
+    el.textContent = texte;
+    el.classList.add('visible');
+    setTimeout(() => el.classList.remove('visible'), 2000);
+}
+
+/** Charge les réglages depuis le serveur (GET /reglages). */
+async function chargerReglages() {
+    try {
+        const rep = await fetch('/reglages');
+        if (!rep.ok) return;
+        const donnees = await rep.json();
+        if (donnees.gauche) zones.gauche.coins = donnees.gauche;
+        if (donnees.droite) zones.droite.coins = donnees.droite;
+        zones.gauche.mettreAJour();
+        zones.droite.mettreAJour();
+        mettreAJourPoignees();
+    } catch (_) {
+        // Pas de réglages sauvegardés : on garde les valeurs par défaut
+    }
+}
+
