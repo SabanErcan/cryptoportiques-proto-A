@@ -1,0 +1,13 @@
+Dossier media — vidéo source
+============================
+
+Déposez ici votre fichier vidéo sous le nom :
+
+    source.mp4
+
+Le serveur le détectera automatiquement au prochain lancement.
+
+Formats supportés : MP4 (H.264 recommandé), WebM.
+
+Si aucun fichier source.mp4 n'est présent, le prototype
+affiche automatiquement une grille de test colorée.
