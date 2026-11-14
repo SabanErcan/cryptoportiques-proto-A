@@ -393,3 +393,31 @@ canvas.addEventListener('mouseup', () => {
     coinEnCours = null;
 });
 
+// ─── Touches clavier ──────────────────────────────────────────────────────────
+
+document.addEventListener('keydown', (e) => {
+    switch (e.key.toLowerCase()) {
+        case 'c':
+            afficherCoins = !afficherCoins;
+            mettreAJourPoignees();
+            break;
+
+        case 'g':
+            modeGrille = !modeGrille;
+            changerSource();
+            break;
+
+        case 'f':
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => { });
+            } else {
+                document.exitFullscreen();
+            }
+            break;
+
+        case 's':
+            sauvegarderReglages();
+            break;
+    }
+});
+
