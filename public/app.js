@@ -333,3 +333,63 @@ function mettreAJourPoignees() {
     });
 }
 
+// ─── Gestion de la souris ─────────────────────────────────────────────────────
+
+/**
+ * Convertit les coordonnées pixel de la souris en coordonnées NDC (-1 à 1).
+ */
+function sourisVersNDC(event) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+        x: ((event.clientX - rect.left) / rect.width) * 2 - 1,
+        y: -((event.clientY - rect.top) / rect.height) * 2 + 1,
+    };
+}
+
+/**
+ * Trouve la poignée la plus proche du point donné (dans un rayon cliquable).
+ */
+function trouverPoigneeProche(pos) {
+    const RAYON_CLIC = RAYON_POIGNEE * 2.5;
+    let meilleurePoignee = null;
+    let meilleureDistance = Infinity;
+
+    meshPoignees.forEach((mesh) => {
+        if (!mesh.visible) return;
+        const dx = mesh.position.x - pos.x;
+        const dy = mesh.position.y - pos.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < RAYON_CLIC && dist < meilleureDistance) {
+            meilleureDistance = dist;
+            meilleurePoignee = mesh.userData;
+        }
+    });
+
+    return meilleurePoignee;
+}
+
+canvas.addEventListener('mousedown', (e) => {
+    if (!afficherCoins) return;
+    const pos = sourisVersNDC(e);
+    coinEnCours = trouverPoigneeProche(pos);
+    if (coinEnCours) sourisEnfoncee = true;
+});
+
+canvas.addEventListener('mousemove', (e) => {
+    if (!sourisEnfoncee || !coinEnCours) return;
+    const pos = sourisVersNDC(e);
+
+    const zone = zones[coinEnCours.zoneId];
+    zone.coins[coinEnCours.coinIndex] = { x: pos.x, y: pos.y };
+    zone.mettreAJour();
+    mettreAJourPoignees();
+});
+
+canvas.addEventListener('mouseup', () => {
+    if (sourisEnfoncee && coinEnCours) {
+        sauvegarderReglages();
+    }
+    sourisEnfoncee = false;
+    coinEnCours = null;
+});
+
