@@ -72,3 +72,36 @@ void main() {
 }
 `;
 
+// ─── Initialisation Three.js ──────────────────────────────────────────────────
+
+const canvas = document.getElementById('canvas-principal');
+
+// On utilise une caméra orthographique (pas de perspective 3D) :
+// l'espace de rendu va de -1 à +1 en X et Y, ce qui correspond exactement
+// aux coordonnées WebGL normalisées (NDC). C'est plus simple pour le mapping.
+const rendu = new THREE.WebGLRenderer({ canvas, antialias: true });
+rendu.setPixelRatio(window.devicePixelRatio);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000000); // fond noir
+
+// Caméra orthographique : [-1, 1] en X et Y — pas de déformation 3D
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
+camera.position.z = 1;
+
+// ─── État global ──────────────────────────────────────────────────────────────
+
+let afficherCoins = true;      // touche C
+let modeGrille = false;        // touche G
+let textureSource = null;      // la texture Three.js (vidéo ou grille)
+let videoElement = null;       // l'élément <video> HTML si on lit une vidéo
+
+// Les deux zones, chacune avec ses 4 coins et son matériau shader
+const zones = {
+    gauche: null,
+    droite: null,
+};
+
+// Coin actuellement glissé à la souris
+let coinEnCours = null;        // { zoneId, coinIndex }
+let sourisEnfoncee = false;
+
