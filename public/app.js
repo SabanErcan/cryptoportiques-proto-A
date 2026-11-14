@@ -494,3 +494,58 @@ function redimensionner() {
 }
 window.addEventListener('resize', redimensionner);
 
+// ─── Boucle d'animation ───────────────────────────────────────────────────────
+
+function animer() {
+    requestAnimationFrame(animer);
+
+    // Si c'est une VideoTexture, Three.js met à jour automatiquement
+    // l'image à chaque frame depuis l'élément <video>
+    if (!modeGrille && videoElement && videoElement.readyState >= 2) {
+        zones.gauche.uniforms.uTexture.value.needsUpdate = true;
+        zones.droite.uniforms.uTexture.value.needsUpdate = true;
+    }
+
+    rendu.render(scene, camera);
+}
+
+// ─── Démarrage ────────────────────────────────────────────────────────────────
+
+async function demarrer() {
+    redimensionner();
+
+    // Demande au serveur si la vidéo source est disponible.
+    // On utilise une route dédiée pour éviter une erreur 404 dans la console.
+    let videoDisponible = false;
+    try {
+        const rep = await fetch('/api/source-disponible');
+        if (rep.ok) {
+            const data = await rep.json();
+            videoDisponible = data.disponible === true;
+        }
+    } catch (_) { /* serveur inaccessible */ }
+
+    if (videoDisponible) {
+        textureSource = chargerVideo('/media/source.mp4');
+    } else {
+        // Pas de vidéo : on affiche la grille de test par défaut
+        modeGrille = true;
+        textureSource = creerTextureGrille();
+    }
+
+    // Création des deux zones avec leurs coins par défaut
+    zones.gauche = creerZone('gauche', Homographie.coinsParDefaut('gauche'));
+    zones.droite = creerZone('droite', Homographie.coinsParDefaut('droite'));
+
+    // Création des poignées visuelles
+    creerPoignees(zones.gauche);
+    creerPoignees(zones.droite);
+
+    // Chargement des réglages sauvegardés (s'il y en a)
+    await chargerReglages();
+
+    // Lancement de la boucle de rendu
+    animer();
+}
+
+demarrer();
