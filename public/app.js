@@ -285,3 +285,51 @@ function creerZone(id, coinsInitiaux) {
     };
 }
 
+// ─── Poignées visuelles (coins) ───────────────────────────────────────────────
+
+const RAYON_POIGNEE = 0.025;  // rayon en coordonnées NDC
+const meshPoignees = [];       // tous les meshes de poignées
+
+const COULEURS_ZONES = {
+    gauche: new THREE.Color(0x00aaff),  // bleu clair
+    droite: new THREE.Color(0xff6600),  // orange
+};
+
+/**
+ * Crée les 4 poignées visuelles pour une zone.
+ * Une poignée est un petit disque (cercle) cliquable.
+ *
+ * Problème de forme ovale : le canvas est plus large que haut.
+ * En coordonnées NDC, 1 unité en X = la moitié de la LARGEUR de l'écran,
+ * et 1 unité en Y = la moitié de la HAUTEUR. Un cercle NDC est donc aplati
+ * horizontalement à l'affichage. On corrige en étirant le mesh en X par
+ * le rapport hauteur/largeur (scale.x = H/L), ce qui annule l'aplatissement.
+ */
+function creerPoignees(zone) {
+    const geo = new THREE.CircleGeometry(RAYON_POIGNEE, 32);
+    zone.coins.forEach((coin, i) => {
+        const mat = new THREE.MeshBasicMaterial({
+            color: COULEURS_ZONES[zone.id],
+            depthTest: false,
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        mesh.position.set(coin.x, coin.y, 0.1);
+        // Correction de l'aspect pour que le cercle reste rond
+        mesh.scale.x = window.innerHeight / window.innerWidth;
+        mesh.renderOrder = 1;
+        mesh.userData = { zoneId: zone.id, coinIndex: i };
+        scene.add(mesh);
+        meshPoignees.push(mesh);
+    });
+}
+
+/** Synchronise la position des meshes de poignées avec les données des zones. */
+function mettreAJourPoignees() {
+    meshPoignees.forEach((mesh) => {
+        const zone = zones[mesh.userData.zoneId];
+        const coin = zone.coins[mesh.userData.coinIndex];
+        mesh.position.set(coin.x, coin.y, 0.1);
+        mesh.visible = afficherCoins;
+    });
+}
+
