@@ -1,0 +1,12 @@
+{
+  "name": "prototype-a-deformation",
+  "version": "1.0.0",
+  "description": "Prototype A — Déformation deux murs avec homographie",
+  "main": "serveur.js",
+  "scripts": {
+    "start": "node serveur.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
